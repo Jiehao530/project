@@ -117,3 +117,27 @@ async def delete_user_by_admin(username: str, username_delete: str, data: UserDa
     if user_delete is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The user could not be deleted")
     return {"detail": f"The user {user_delete} has been successfully deleted"}
+
+@router.patch("/user/{username}", status_code=status.HTTP_202_ACCEPTED)
+async def update_user(username: str, new_data: User, data: UserDataBase = Depends(get_user)):
+    validation = user_validation(username)
+    id_validation(validation.id, data.id)
+    
+    existing_email = client.users.find_one({"email": new_data.email, "_id": {"$ne": ObjectId(data.id)}})
+    if existing_email is not None:
+        raise HTTPException(status_code=status.HTTP_302_FOUND, detail="This email is in use")
+    existing_username = client.users.find_one({"username": new_data.username, "_id": {"$ne": ObjectId(data.id)}})
+    if existing_username is not None:
+        raise HTTPException(status_code=status.HTTP_302_FOUND, detail="This username is in use")
+    
+    new_data_dict = dict(new_data)
+    if crypt.verify(new_data.password, search_user("_id", ObjectId(data.id)).password):
+        del new_data_dict["password"]
+    else:
+        new_data_dict["password"] = crypt.hash(new_data.password)
+    
+    update = client.users.update_one({"_id": ObjectId(data.id)},{"$set": new_data_dict})
+    if update.modified_count == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not be updated")
+    get_update = search_user("_id", ObjectId(data.id))
+    return user_scheme_final(dict(get_update))
