@@ -76,7 +76,7 @@ async def signup_user(data: User):
     new_user = search_user("_id", ObjectId(id))
     return user_scheme_final(dict(new_user))
 
-@router.post("/login")
+@router.post("/login", status_code=status.HTTP_200_OK)
 async def login_user(form: OAuth2PasswordRequestForm = Depends()):
     user = search_user("username", form.username)
     if user is None:
@@ -87,7 +87,7 @@ async def login_user(form: OAuth2PasswordRequestForm = Depends()):
     token = get_token(user.username)
     return {"Token": token, "Token_type": "Bearer"}
 
-@router.get("/user/{username}")
+@router.get("/user/{username}", status_code=status.HTTP_202_ACCEPTED)
 async def get_user(username: str, data: UserDataBase = Depends(verify_token)):
     validation = user_validation(username)
     id_validation(validation.id, data.id)
@@ -104,3 +104,16 @@ async def get_user_admin(username: str, data: UserDataBase = Depends(verify_toke
     
     usersdatabase = client.users.find()
     return user_admin_scheme(usersdatabase)
+
+@router.delete("/user/{username}/admin/{username_delete}", status_code=status.HTTP_202_ACCEPTED)
+async def delete_user_by_admin(username: str, username_delete: str, data: UserDataBase = Depends(get_user)):
+    validation = user_validation(username)
+    id_validation(validation.id, data.id)
+    if validation.rol != Roles.ADMIN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You don't have administrator permissions")
+    
+    user_delete_validation = user_validation(username_delete)
+    user_delete = client.users.find_one_and_delete({"_id": ObjectId(user_delete_validation.id)})
+    if user_delete is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The user could not be deleted")
+    return {"detail": f"The user {user_delete} has been successfully deleted"}
