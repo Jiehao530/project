@@ -28,9 +28,9 @@ def search_user(field: str, value):
 def get_token(user: str):
     data_token = {
         "sub": user,
-        "exp": datetime.utcnow + ACCESS_TOKEN_DURATION
+        "exp": datetime.utcnow() + ACCESS_TOKEN_DURATION
     }
-    token = jwt.encode(data_token, SECRET, algorithm=[ALGORITHM])
+    token = jwt.encode(data_token, SECRET, algorithm=ALGORITHM)
     return token
 
 async def verify_token(token: str = Depends(outh2)):
