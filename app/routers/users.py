@@ -30,8 +30,24 @@ def get_token(user: str):
         "sub": user,
         "exp": datetime.utcnow + ACCESS_TOKEN_DURATION
     }
-    token = jwt.encode(data_token, SECRET, algorithm=ALGORITHM)
+    token = jwt.encode(data_token, SECRET, algorithm=[ALGORITHM])
     return token
+
+async def verify_token(token: str = Depends(outh2)):
+    try: 
+        data_token = jwt.decode(token, SECRET, algorithms=ALGORITHM)
+        username = data_token.get("sub")
+        if username is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect token")
+        user = search_user("username", username)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect token")
+        if user.status == Status.INACTIVE:
+            raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="This user is inactive")
+        return user
+    
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect or expired token")
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup_user(data: User):
@@ -60,4 +76,15 @@ async def login_user(form: OAuth2PasswordRequestForm = Depends()):
     
     token = get_token(user.username)
     return {"Token": token, "Token_type": "Bearer"}
+
+@router.get("/user/{username}")
+async def get_user(username: str, data: UserDataBase = Depends(verify_token)):
+    user_validation = search_user("username", username)
+    if user_validation is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This user doesn't exist")
+    if user_validation.id != data.id: 
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You do not have permission to access this user")
+    
+    user = user_scheme_final(dict(data))
+    return UserDataBase(**user)
     
