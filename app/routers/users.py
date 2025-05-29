@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from models.users_models import User, UserDataBase
 from models.static_models import Roles, Status
-from schemes.users_schemes import user_scheme, user_scheme_final
+from schemes.users_schemes import user_scheme, user_scheme_final, user_admin_scheme
 from services.client import client
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -49,6 +49,16 @@ async def verify_token(token: str = Depends(outh2)):
     except JWTError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect or expired token")
 
+def user_validation(username: str):
+    user = search_user("username", username)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This user doesn't exist")
+    return user
+
+def id_validation(id_user: str, id_data: str):
+    if id_user != id_data: 
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You don't have permission to access this user")
+
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def signup_user(data: User):
     if search_user("email", data.email) is not None:
@@ -79,12 +89,18 @@ async def login_user(form: OAuth2PasswordRequestForm = Depends()):
 
 @router.get("/user/{username}")
 async def get_user(username: str, data: UserDataBase = Depends(verify_token)):
-    user_validation = search_user("username", username)
-    if user_validation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This user doesn't exist")
-    if user_validation.id != data.id: 
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You do not have permission to access this user")
-    
+    validation = user_validation(username)
+    id_validation(validation.id, data.id)
+
     user = user_scheme_final(dict(data))
     return UserDataBase(**user)
+
+@router.get("/user/{username}/admin")
+async def get_user_admin(username: str, data: UserDataBase = Depends(verify_token)):
+    validation = user_validation(username)
+    id_validation(validation.id, data.id)
+    if validation.rol != Roles.ADMIN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You don't have administrator permissions")
     
+    usersdatabase = client.users.find()
+    return user_admin_scheme(usersdatabase)
