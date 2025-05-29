@@ -141,3 +141,13 @@ async def update_user(username: str, new_data: User, data: UserDataBase = Depend
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not be updated")
     get_update = search_user("_id", ObjectId(data.id))
     return user_scheme_final(dict(get_update))
+
+@router.delete("/user/{username}", status_code=status.HTTP_200_OK)
+async def delete_user(username: str, data: UserDataBase = Depends(get_user)):
+    validation = user_validation(username)
+    id_validation(validation.id, data.id)
+
+    delete = client.users.find_one_and_delete({"_id": ObjectId(data.id)})
+    if delete is None: 
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The user could not be deleted")
+    return {"detail": "The user has been successfully deleted"}
