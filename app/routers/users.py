@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/../"))
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from models.users_models import User, UserDataBase
@@ -116,7 +119,7 @@ async def delete_user_by_admin(username: str, username_delete: str, data: UserDa
     user_delete = client.users.find_one_and_delete({"_id": ObjectId(user_delete_validation.id)})
     if user_delete is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The user could not be deleted")
-    return {"detail": f"The user {user_delete} has been successfully deleted"}
+    return {"detail": f"The user {username_delete} has been successfully deleted"}
 
 @router.patch("/user/{username}", status_code=status.HTTP_202_ACCEPTED)
 async def update_user(username: str, new_data: User, data: UserDataBase = Depends(get_user)):

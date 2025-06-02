@@ -1,15 +1,23 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/../"))
 from pydantic import BaseModel, constr, EmailStr
-from static_models import Roles, Status
+from models.static_models import Roles, Status
 from datetime import datetime
 
 class User(BaseModel):
-    username: constr(min_length=6, max_length=18, pattern=r"^[a-zA-Z0-9._-]$")
-    password: constr(min_length=8, max_length=20, pattern=r"^[a-zA-Z0-9._-@%*+/]$")
+    username: constr(pattern=r"^[a-zA-Z0-9._-]{6,18}$")
+    password: constr(pattern=r"^[a-zA-Z0-9._\-@%*+/]{8,20}$")
     email: EmailStr
     department: str
     rol: Roles
 
-class UserDataBase(User):
+class UserDataBase(BaseModel):
+    username: str
+    password: str
+    email: EmailStr
+    department: str
+    rol: Roles
     id: str
     status: Status
     creation_date: datetime
