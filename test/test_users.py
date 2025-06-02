@@ -64,3 +64,15 @@ def user_tester():
 def test_delete_user_by_admin(get_headers):
     response = client.delete("/user/UserTester/admin/UserTester2", headers=get_headers)
     assert response.status_code == 202
+
+def test_update_user():
+    new_data = {
+        "username": "Tester",
+        "password": "Testing12345",
+        "email": "tester@gmail.com",
+        "department": "Testing",
+        "rol": "admin"
+    }
+    response = client.patch("/user/UserTester", json=new_data)
+    assert response.status_code == 202
+    assert response.json()["username"] == "Tester"
