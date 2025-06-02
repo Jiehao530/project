@@ -18,3 +18,12 @@ def test_signup_user():
     response = client.post("/signup", json=data)
     assert response.status_code == 201
     assert response.json()["username"] == "UserTester"
+
+def test_login_user():
+    data = {
+        "username": "UserTester",
+        "password": "Testing123"
+    }
+    response = client.post("/login", data=data)
+    assert response.status_code == 200
+    assert "Token" in response.json()
