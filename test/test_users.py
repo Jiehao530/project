@@ -65,7 +65,7 @@ def test_delete_user_by_admin(get_headers):
     response = client.delete("/user/UserTester/admin/UserTester2", headers=get_headers)
     assert response.status_code == 202
 
-def test_update_user():
+def test_update_user(get_headers):
     new_data = {
         "username": "Tester",
         "password": "Testing12345",
@@ -73,6 +73,19 @@ def test_update_user():
         "department": "Testing",
         "rol": "admin"
     }
-    response = client.patch("/user/UserTester", json=new_data)
+    response = client.patch("/user/UserTester", json=new_data, headers=get_headers)
     assert response.status_code == 202
     assert response.json()["username"] == "Tester"
+
+@pytest.fixture
+def get_new_token():
+    token = client.post("/login", data={"username": "Tester","password": "Testing12345"})
+    assert token.status_code == 200
+    assert "Token" in token.json()
+    return token.json()["Token"]
+
+def test_delete_user(get_new_token):
+    headers = {"Authorization": f"Bearer {get_new_token}"}
+    response = client.delete("/user/Tester", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["detail"] == "The user has been successfully deleted"
