@@ -48,3 +48,19 @@ def test_get_user_admin(get_headers):
     response = client.get("/user/UserTester/admin", headers=get_headers)
     assert response.status_code == 202
     assert type(response.json()) == list
+
+def user_tester():
+    data = {
+        "username": "UserTester2",
+        "password": "Testing1234",
+        "email": "usertester2@gmail.com",
+        "department": "Testing",
+        "rol": "admin"
+        }
+    user = client.post("/signup", json=data)
+    assert user.status_code == 201
+    assert user.json()["username"] == "UserTester2"
+
+def test_delete_user_by_admin(get_headers):
+    response = client.delete("/user/UserTester/admin/UserTester2", headers=get_headers)
+    assert response.status_code == 202
