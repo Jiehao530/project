@@ -35,9 +35,16 @@ def get_token():
     assert "Token" in token.json()
     return token.json()["Token"]
 
-def test_get_user(get_token):
-    headers = {"Authorization": f"Bearer {get_token}"}
+@pytest.fixture
+def get_headers(get_token):
+    return {"Authorization": f"Bearer {get_token}"}
 
-    response = client.get("/user/UserTester", headers=headers)
+def test_get_user(get_headers):
+    response = client.get("/user/UserTester", headers=get_headers)
     assert response.status_code == 202
     assert response.json()["username"] == "UserTester"
+
+def test_get_user_admin(get_headers):
+    response = client.get("/user/UserTester/admin", headers=get_headers)
+    assert response.status_code == 202
+    assert type(response.json()) == list

@@ -98,7 +98,7 @@ async def get_user(username: str, data: UserDataBase = Depends(verify_token)):
     user = user_scheme_final(dict(data))
     return UserDataBase(**user)
 
-@router.get("/user/{username}/admin")
+@router.get("/user/{username}/admin", status_code=status.HTTP_202_ACCEPTED)
 async def get_user_admin(username: str, data: UserDataBase = Depends(verify_token)):
     validation = user_validation(username)
     id_validation(validation.id, data.id)
