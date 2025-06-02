@@ -49,7 +49,7 @@ def test_get_user_admin(get_headers):
     assert response.status_code == 202
     assert type(response.json()) == list
 
-def user_tester():
+def test_user_tester():
     data = {
         "username": "UserTester2",
         "password": "Testing1234",
