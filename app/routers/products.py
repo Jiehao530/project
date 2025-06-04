@@ -6,7 +6,7 @@ from models.products_models import NewProduct, Product
 from models.users_models import UserDataBase
 from models.static_models import Roles
 from services.client import client
-from routers.users import get_user, verify_token
+from routers.users import verify_token
 from bson import ObjectId
 from schemes.product_schemes import product_scheme
 
@@ -26,6 +26,7 @@ def product_validation(name: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The product was not found")
     return product
 
+#PARA EL ADMINISTRADOR
 @router.post("/products", status_code=status.HTTP_201_CREATED)
 async def add_product(new_product: NewProduct, user: UserDataBase = Depends(verify_token)):
     if not isinstance(user, UserDataBase):
@@ -40,6 +41,22 @@ async def add_product(new_product: NewProduct, user: UserDataBase = Depends(veri
     search_new = search_product("_id", ObjectId(id_product))
     return search_new
 
+@router.delete("/product/{name}", status_code=status.HTTP_200_OK)
+async def delete_product(name: str, user: UserDataBase = Depends(verify_token)):
+    if not isinstance(user, UserDataBase):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You need to log in")
+    if user.rol != Roles.ADMIN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You don't have administrator permissions")
+    
+    product = product_validation(name)
+    delete = client.products.find_one_and_delete({"_id": ObjectId(product.id)})
+    if delete is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The product could not be deleted")
+
+    return {"detail": f"The product {product.name} has been successfully deleted"}
+
+
+#PARA EL CLIENTE
 @router.get("/product/{name}", status_code=status.HTTP_202_ACCEPTED)
 async def get_product(name: str):
     product = search_product("name", name)
