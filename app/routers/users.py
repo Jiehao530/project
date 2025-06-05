@@ -28,17 +28,32 @@ def search_user(field: str, value):
     except:
         return None
 
-def get_token(user: str):
+def get_token(user: UserDataBase):
     data_token = {
-        "sub": user,
+        "sub": user.username,
         "exp": datetime.utcnow() + ACCESS_TOKEN_DURATION
     }
     token = jwt.encode(data_token, SECRET, algorithm=ALGORITHM)
+
+    client.tokens.insert_one({
+        "user_id": ObjectId(user.id),
+        "username": user.username,
+        "token": token,
+        "created_at": datetime.utcnow()
+    })
     return token
 
 async def verify_token(token: str = Depends(outh2)):
     try: 
         data_token = jwt.decode(token, SECRET, algorithms=ALGORITHM)
+
+        expire = data_token.get("exp")
+        if expire is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect token")
+        if expire < datetime.utcnow():
+            client.tokens.delete_one({"token": token})
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired, please log in again")
+        
         username = data_token.get("sub")
         if username is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect token")
@@ -50,7 +65,7 @@ async def verify_token(token: str = Depends(outh2)):
         return user
     
     except JWTError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect or expired token")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect token")
 
 def user_validation(username: str):
     user = search_user("username", username)
@@ -87,8 +102,16 @@ async def login_user(form: OAuth2PasswordRequestForm = Depends()):
     if not crypt.verify(form.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
     
-    token = get_token(user.username)
+    token = get_token(user)
     return {"Token": token, "Token_type": "Bearer"}
+
+@router.post("/logout", status_code=status.HTTP_200_OK)
+async def logout_user(user: UserDataBase = Depends(verify_token)):
+    logout = client.tokens.delete_one({"user_id": ObjectId(user.id)})
+    if logout is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not log out")
+        
+    return {"detail": "User successfully logged out"}
 
 @router.get("/user/{username}", status_code=status.HTTP_202_ACCEPTED)
 async def get_user(username: str, data: UserDataBase = Depends(verify_token)):
