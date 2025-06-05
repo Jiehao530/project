@@ -50,7 +50,7 @@ async def verify_token(token: str = Depends(outh2)):
         expire = data_token.get("exp")
         if expire is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect token")
-        if expire < datetime.utcnow():
+        if datetime.utcfromtimestamp(expire) < datetime.utcnow():
             client.tokens.delete_one({"token": token})
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired, please log in again")
         
@@ -110,7 +110,7 @@ async def logout_user(user: UserDataBase = Depends(verify_token)):
     logout = client.tokens.delete_one({"user_id": ObjectId(user.id)})
     if logout is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not log out")
-        
+
     return {"detail": "User successfully logged out"}
 
 @router.get("/user/{username}", status_code=status.HTTP_202_ACCEPTED)

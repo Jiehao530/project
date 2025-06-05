@@ -63,11 +63,12 @@ async def delete_product(name: str, user: UserDataBase = Depends(verify_token)):
 #FOR THE CLIENT AND ADMINISTRATOR
 @router.get("/product/{name}", status_code=status.HTTP_202_ACCEPTED)
 async def get_product(name: str):
-    product = search_product("name", name)
+    product = search_product("name",name)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The product was not found")
     return product
 
+#FOR THE CLIENT
 @router.get("/products", status_code=status.HTTP_202_ACCEPTED)
 async def get_products():
     products_list = client.products.find()
