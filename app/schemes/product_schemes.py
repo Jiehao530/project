@@ -7,3 +7,6 @@ def product_scheme(data) -> dict:
         "quantity": data["quantity"],
         "category": data["category"]
     }
+
+def products_scheme(data) -> list:
+    return [product_scheme(product) for product in data]

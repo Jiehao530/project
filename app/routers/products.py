@@ -8,7 +8,7 @@ from models.static_models import Roles
 from services.client import client
 from routers.users import verify_token
 from bson import ObjectId
-from schemes.product_schemes import product_scheme
+from schemes.product_schemes import product_scheme, products_scheme
 
 router = APIRouter()
 
@@ -67,6 +67,11 @@ async def get_product(name: str):
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The product was not found")
     return product
+
+@router.get("/products", status_code=status.HTTP_202_ACCEPTED)
+async def get_products():
+    products_list = client.products.find()
+    return products_scheme(products_list)
 
 #FOR THE ADMINISTRATOR
 @router.patch("/product/{name}", status_code=status.HTTP_202_ACCEPTED)
