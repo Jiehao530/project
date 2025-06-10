@@ -13,7 +13,7 @@ from bson import ObjectId
 from jose import jwt, JWTError
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_DURATION = timedelta(hours=1)
+ACCESS_TOKEN_DURATION = timedelta(hours=6)
 SECRET = "e3f1a8b7c9d6e4f2a1b0c3d5e7f8a9b6c4d2e0f1a3b5c7d9e6f4a2b0c1d3e5f7"
 crypt = CryptContext(schemes=["bcrypt"])
 
@@ -21,12 +21,10 @@ router = APIRouter()
 outh2 = OAuth2PasswordBearer(tokenUrl="/login")
 
 def search_user(field: str, value):
-    try:
-        search = client.users.find_one({field: value})
-        search_dict = user_scheme(search)
-        return UserDataBase(**search_dict)
-    except:
-        return None
+    search = client.users.find_one({field: value})
+    if search:
+        return UserDataBase(**user_scheme(search))
+
 
 def get_token(user: UserDataBase):
     data_token = {
@@ -45,7 +43,7 @@ def get_token(user: UserDataBase):
 
 async def verify_token(token: str = Depends(outh2)):
     try: 
-        data_token = jwt.decode(token, SECRET, algorithms=ALGORITHM)
+        data_token = jwt.decode(token, SECRET, algorithms=ALGORITHM, options={"verify_exp":False})
 
         expire = data_token.get("exp")
         if expire is None:
@@ -102,13 +100,17 @@ async def login_user(form: OAuth2PasswordRequestForm = Depends()):
     if not crypt.verify(form.password, user.password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
     
+    existing_token = client.tokens.find_one({"user_id": ObjectId(user.id)})
+    if existing_token:
+        client.tokens.delete_one({"user_id": ObjectId(user.id)})
+    
     token = get_token(user)
     return {"Token": token, "Token_type": "Bearer"}
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout_user(user: UserDataBase = Depends(verify_token)):
     logout = client.tokens.delete_one({"user_id": ObjectId(user.id)})
-    if logout is None:
+    if logout.deleted_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not log out")
 
     return {"detail": "User successfully logged out"}
@@ -139,6 +141,10 @@ async def delete_user_by_admin(username: str, username_delete: str, data: UserDa
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You don't have administrator permissions")
     
     user_delete_validation = user_validation(username_delete)
+    existing_token = client.tokens.find_one({"user_id": ObjectId(user_delete_validation.id)})
+    if existing_token:
+        client.tokens.delete_one({"user_id": ObjectId(user_delete_validation.id)})
+    
     user_delete = client.users.find_one_and_delete({"_id": ObjectId(user_delete_validation.id)})
     if user_delete is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The user could not be deleted")
@@ -172,6 +178,10 @@ async def update_user(username: str, new_data: User, data: UserDataBase = Depend
 async def delete_user(username: str, data: UserDataBase = Depends(get_user)):
     validation = user_validation(username)
     id_validation(validation.id, data.id)
+
+    existing_token = client.tokens.find_one({"user_id": ObjectId(data.id)})
+    if existing_token:
+        client.tokens.delete_one({"user_id": ObjectId(data.id)})
 
     delete = client.users.find_one_and_delete({"_id": ObjectId(data.id)})
     if delete is None: 

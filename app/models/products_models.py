@@ -22,8 +22,8 @@ class Product(BaseModel):
     category: Category
 
 class UpdateProduct(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
-    price: Optional[float]
-    quantity: Optional[int]
-    category: Optional[Category]
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    quantity: Optional[int] = None
+    category: Optional[Category] = None

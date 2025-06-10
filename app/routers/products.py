@@ -13,12 +13,9 @@ from schemes.product_schemes import product_scheme, products_scheme
 router = APIRouter()
 
 def search_product(field: str, value):
-    try:
-        search = client.products.find_one({field: value})
-        search_dict = product_scheme(search)
-        return Product(**search_dict)
-    except:
-        return None
+    search = client.products.find_one({field: value})
+    if search:
+        return Product(**product_scheme(search))
 
 def product_validation(name: str):
     product = search_product("name", name)
@@ -81,12 +78,13 @@ async def update_product(name: str, product_new_data: UpdateProduct, user: UserD
     user_admin_validation(user)
     product_validation(name)
 
-    product_new_data_dict = dict(product_new_data)
-    if product_new_data_dict["name"] in product_new_data_dict:
+    product_new_data_dict = product_new_data.dict(exclude_unset=True)
+    print(product_new_data_dict)
+    if "name" in product_new_data_dict:
         product_name_existing = client.products.find_one({"name": product_new_data_dict["name"], "_id": {"$ne": ObjectId(product.id)}})
         if product_name_existing is not None:
             raise HTTPException(status_code=status.HTTP_302_FOUND, detail="The product exists")
-    
+
     update = client.products.update_one({"_id": ObjectId(product.id)}, {"$set": product_new_data_dict})
     if update.modified_count == 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The product has not been updated")
