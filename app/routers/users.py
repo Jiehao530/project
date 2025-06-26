@@ -18,7 +18,7 @@ SECRET = "e3f1a8b7c9d6e4f2a1b0c3d5e7f8a9b6c4d2e0f1a3b5c7d9e6f4a2b0c1d3e5f7"
 crypt = CryptContext(schemes=["bcrypt"])
 
 router = APIRouter()
-outh2 = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2 = OAuth2PasswordBearer(tokenUrl="/login")
 
 def search_user(field: str, value):
     search = client.users.find_one({field: value})
