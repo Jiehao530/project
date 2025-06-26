@@ -41,7 +41,7 @@ def get_token(user: UserDataBase):
     })
     return token
 
-async def verify_token(token: str = Depends(outh2)):
+async def verify_token(token: str = Depends(oauth2)):
     try: 
         data_token = jwt.decode(token, SECRET, algorithms=ALGORITHM, options={"verify_exp":False})
 
