@@ -14,13 +14,21 @@ REST API with FastAPI and MongoDB that offers JWT authentication, role control, 
 - python-jose - JWT Token Management
 
 ## INSTALLING
-
-- git clone git@github.com:Jiehao530/project.git
-- pip install -r requirements.txt
-
+```bash
+git clone git@github.com:Jiehao530/project.git
+```
+```bash
+pip install -r requirements.txt
+```
 ## RUN THE PROJECT'S SOURCE CODE
 
-- From main.py, run the following command in the terminal: uvicorn main:app --reload, or alternatively run python main.py
+```bash
+python main.py
+```
+OR
+```bash
+uvicorn main:app --reload
+```
 
 ## MAIN ENDPOINTS
 
