@@ -1,4 +1,3 @@
-
 # BACKEND API FOR USER AND PRODUCT MANAGEMENT
 
 ## DESCRIPTION
@@ -14,6 +13,7 @@ REST API with FastAPI and MongoDB that offers JWT authentication, role control, 
 - python-jose - JWT Token Management
 
 ## INSTALLING
+
 ```bash
 git clone git@github.com:Jiehao530/project.git
 ```
